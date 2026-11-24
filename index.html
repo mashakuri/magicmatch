@@ -336,7 +336,7 @@ function sender(from){
   if(from==='evan'||from==='phoebe') return S.convs[from].person;
   return person(from) || {name:from, init:from.slice(0,2).toUpperCase(), color:'#888'};
 }
-const MARK = (id)=>`<svg viewBox="0 0 64 64" width="100%" height="100%" aria-hidden="true"><defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#611f69"/><stop offset="1" stop-color="#e01e5a"/></linearGradient></defs><rect width="64" height="64" rx="15" fill="url(#${id})"/><circle cx="25" cy="37" r="12" fill="none" stroke="#fff" stroke-width="5"/><circle cx="39" cy="37" r="12" fill="none" stroke="#fff" stroke-width="5"/><path d="M32 11.5 Q33.44 18.06 40 19.5 Q33.44 20.94 32 27.5 Q30.56 20.94 24 19.5 Q30.56 18.06 32 11.5Z" fill="#ffd166"/></svg>`;
+const MARK = (id)=>`<svg viewBox="0 0 64 64" width="100%" height="100%" aria-hidden="true"><defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#611f69"/><stop offset="1" stop-color="#e01e5a"/></linearGradient></defs><rect width="64" height="64" rx="15" fill="url(#${id})"/><circle cx="24.5" cy="32" r="12.5" fill="none" stroke="#fff" stroke-width="3.6"/><circle cx="39.5" cy="32" r="12.5" fill="none" stroke="#fff" stroke-width="3.6"/><path d="M32 25.5 Q33.30 30.70 38.5 32 Q33.30 33.30 32 38.5 Q30.70 33.30 25.5 32 Q30.70 30.70 32 25.5Z" fill="#ffd166" stroke="#a11c5e" stroke-width="2" paint-order="stroke" stroke-linejoin="round"/></svg>`;
 let markN=0;
 function botAvatar(size){ const st = size?`width:${size}px;height:${size}px;`:''; return `<div class="av" style="${st}background:none;padding:0">${MARK('mk'+(markN++))}</div>`; }
 function avatar(p){ return p.bot ? botAvatar() : `<div class="av" style="background:${p.color}">${esc(p.init)}</div>`; }
