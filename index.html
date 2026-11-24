@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MagicMatch — Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --aub:#3f0e40; --aub-dark:#350d36; --aub-2:#4a154b; --side-text:rgba(255,255,255,.72);
+  --text:#1d1c1d; --muted:#616061; --line:#dddddd; --line-soft:#ebeaeb;
+  --green:#007a5a; --green-h:#148567; --blue:#1264a3; --hover:#f8f8f8; --mention:#fdf3d6;
+  --radius:8px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;font-family:Lato,"Helvetica Neue",Arial,sans-serif;color:var(--text);font-size:15px;-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer}
+.app{display:grid;grid-template-rows:44px 1fr;height:100vh;background:linear-gradient(160deg,#3b0d3c 0%,#4a154b 100%)}
+/* top bar */
+.top{display:grid;grid-template-columns:70px 1fr 70px;align-items:center;padding:0 10px}
+.top .nav{display:flex;gap:6px;color:rgba(255,255,255,.7)}
+.top .search{justify-self:center;width:min(720px,60vw);height:28px;border-radius:6px;background:rgba(255,255,255,.18);border:0;color:#fff;padding:0 12px 0 32px;font-size:13px;position:relative}
+.search-wrap{position:relative;justify-self:center}
+.search-wrap svg{position:absolute;left:10px;top:7px;opacity:.8}
+.search::placeholder{color:rgba(255,255,255,.85)}
+.proto-chip{justify-self:end;font-size:11px;font-weight:700;color:#fff;background:rgba(255,255,255,.16);border-radius:10px;padding:3px 8px;letter-spacing:.3px}
+.body{display:grid;grid-template-columns:70px 260px 1fr;min-height:0;padding:0 6px 6px 0}
+/* rail */
+.rail{display:flex;flex-direction:column;align-items:center;gap:14px;padding-top:6px;color:#fff}
+.ws{width:36px;height:36px;border-radius:9px;background:#fff;color:var(--aub);font-weight:900;display:grid;place-items:center;font-size:14px;box-shadow:0 0 0 3px rgba(255,255,255,.25)}
+.rail-item{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;font-weight:700;color:rgba(255,255,255,.85);background:none;border:0}
+.rail-item .ic{width:36px;height:36px;border-radius:9px;display:grid;place-items:center}
+.rail-item.on .ic{background:rgba(255,255,255,.22)}
+.rail-item:hover .ic{background:rgba(255,255,255,.14)}
+.rail .me{margin-top:auto;margin-bottom:10px;position:relative}
+.dot{position:absolute;right:-3px;bottom:-3px;width:12px;height:12px;border-radius:50%;background:#2bac76;border:2.5px solid var(--aub)}
+/* sidebar */
+.side{background:rgba(0,0,0,.08);border-radius:var(--radius) 0 0 var(--radius);color:var(--side-text);overflow:auto;display:flex;flex-direction:column}
+.side-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px 10px;color:#fff}
+.side-head h1{font-size:18px;font-weight:900;margin:0;display:flex;align-items:center;gap:4px}
+.icon-btn{background:none;border:0;color:inherit;width:28px;height:28px;border-radius:6px;display:grid;place-items:center}
+.icon-btn:hover{background:rgba(255,255,255,.14)}
+.sec{padding:6px 8px}
+.sec-title{font-size:14px;padding:4px 8px;display:flex;align-items:center;gap:6px;color:var(--side-text)}
+.item{display:flex;align-items:center;gap:8px;height:28px;padding:0 10px;border-radius:6px;font-size:15px;color:var(--side-text);background:none;border:0;width:100%;text-align:left}
+.item:hover{background:rgba(255,255,255,.1)}
+.item.on{background:rgba(255,255,255,.92);color:var(--aub)}
+.item.unread{color:#fff;font-weight:900}
+.item .badge{margin-left:auto;background:#cd2553;color:#fff;font-size:11px;font-weight:700;border-radius:9px;padding:1px 7px}
+.item .mini{width:20px;height:20px;border-radius:4px;font-size:10px;font-weight:900;display:grid;place-items:center;color:#fff;flex:none}
+.app-tag{font-size:10px;font-weight:700;background:rgba(255,255,255,.18);border-radius:3px;padding:0 4px;color:inherit;opacity:.8}
+.item.on .app-tag{background:rgba(63,14,64,.12)}
+/* main */
+.main{background:#fff;border-radius:0 var(--radius) var(--radius) 0;display:flex;flex-direction:column;min-width:0;min-height:0;position:relative}
+.hdr{border-bottom:1px solid var(--line-soft);padding:0 16px;display:flex;flex-direction:column;justify-content:flex-end}
+.hdr-row{display:flex;align-items:center;gap:8px;height:49px}
+.hdr-title{font-weight:900;font-size:18px;display:flex;align-items:center;gap:8px;padding:3px 6px;border-radius:6px}
+.hdr-title:hover{background:var(--hover)}
+.hdr-right{margin-left:auto;display:flex;gap:6px;align-items:center;color:var(--muted);font-size:13px}
+.members{display:flex;align-items:center;border:1px solid var(--line);border-radius:6px;padding:2px 8px 2px 4px;gap:6px;font-weight:700}
+.tabs{display:flex;gap:18px;margin-top:-6px}
+.tab{background:none;border:0;padding:6px 2px 9px;font-size:14px;color:var(--muted);border-bottom:2px solid transparent;font-weight:700}
+.tab.on{color:var(--text);border-color:#611f69}
+.feed{flex:1;overflow:auto;padding:8px 0 12px}
+.day{display:flex;align-items:center;margin:14px 0 6px}
+.day:before,.day:after{content:"";flex:1;border-top:1px solid var(--line-soft)}
+.day span{border:1px solid var(--line-soft);border-radius:14px;padding:3px 14px;font-size:13px;font-weight:700}
+.msg{display:grid;grid-template-columns:36px 1fr;gap:8px;padding:6px 20px;position:relative}
+.msg:hover{background:var(--hover)}
+.msg.cont{padding-top:1px;padding-bottom:1px}
+.msg.cont > .av{visibility:hidden;height:0}
+.msg.ephemeral{background:#f8f4f8}
+.av{width:36px;height:36px;border-radius:8px;display:grid;place-items:center;color:#fff;font-weight:900;font-size:14px;overflow:hidden}
+.who{font-weight:900;font-size:15px}
+.meta{display:flex;align-items:baseline;gap:6px}
+.time{font-size:12px;color:var(--muted)}
+.text{line-height:1.46;word-wrap:break-word;white-space:pre-wrap}
+.text a{color:var(--blue);text-decoration:none}
+.text code{font-family:Menlo,monospace;font-size:12px;background:#f6f6f6;border:1px solid #e2e2e2;border-radius:3px;padding:1px 3px;color:#c01343}
+.mention{background:#e8f5fa;color:var(--blue);border-radius:3px;padding:0 2px;font-weight:700}
+.mention.me{background:var(--mention);color:#7b5a00}
+.blocks{display:flex;flex-direction:column;gap:8px;margin-top:4px;max-width:620px}
+.ctx{font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{height:32px;padding:0 12px;border-radius:6px;border:1px solid rgba(29,28,29,.3);background:#fff;font-weight:700;font-size:14px;color:var(--text)}
+.btn:hover{background:#f8f8f8;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.btn.primary{background:var(--green);border-color:var(--green);color:#fff}
+.btn.primary:hover{background:var(--green-h)}
+.btn.danger{color:#e01e5a}
+.btn:disabled{opacity:.45;cursor:default;box-shadow:none}
+.done{font-size:13px;color:var(--muted);display:flex;gap:6px;align-items:center}
+.divider{border-top:1px solid var(--line-soft)}
+.card{border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:12px;background:#fff}
+.prof{display:flex;gap:12px;align-items:flex-start}
+.prof .av{width:56px;height:56px;font-size:20px;border-radius:10px}
+.prof h3{margin:0 0 2px;font-size:16px}
+.prof .sub{color:var(--muted);font-size:13px}
+.prof .bio{margin-top:6px;font-size:14px;line-height:1.4}
+.why{background:#f4ede4;border-radius:8px;padding:10px 12px;font-size:14px}
+.why > b{display:block;margin-bottom:4px}
+.why ul{margin:0;padding-left:18px;line-height:1.5}
+.starter{border-left:4px solid #611f69;padding:2px 0 2px 12px;font-size:14px;line-height:1.45}
+.starter .q{font-style:italic}
+.link-btn{background:none;border:0;color:var(--blue);padding:0;font-size:13px;margin-top:4px}
+.link-btn:hover{text-decoration:underline}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-size:12px;background:#f2f2f2;border-radius:12px;padding:3px 9px;color:#454245}
+.chip.shared{background:#e3f5ef;color:#0b6b4f;font-weight:700}
+.sched,.card.sched{display:flex;flex-direction:row;gap:12px;align-items:center}
+.sched .cal{width:44px;height:48px;border-radius:8px;border:1px solid var(--line);display:flex;flex-direction:column;overflow:hidden;text-align:center;flex:none}
+.sched .cal span:first-child{background:#e01e5a;color:#fff;font-size:10px;font-weight:900;padding:2px 0}
+.sched .cal span:last-child{font-size:18px;font-weight:900;padding-top:3px}
+.status{font-size:12px;font-weight:700;border-radius:10px;padding:2px 8px}
+.status.pending{background:#fff4d6;color:#7b5a00}.status.ok{background:#e3f5ef;color:#0b6b4f}
+.reacts{display:flex;gap:4px;margin-top:4px;flex-wrap:wrap}
+.react{border:1px solid transparent;background:#efefef;border-radius:12px;font-size:12px;padding:1px 8px;height:24px;display:flex;align-items:center;gap:4px}
+.react.mine{background:#e8f5fa;border-color:#1d9bd1;color:#1264a3}
+.hover-bar{position:absolute;right:20px;top:-14px;display:none;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,.08);padding:2px}
+.msg:hover .hover-bar{display:flex}
+.hover-bar button{background:none;border:0;width:30px;height:28px;border-radius:5px;font-size:15px}
+.hover-bar button:hover{background:#f2f2f2}
+.typing{height:20px;padding:0 20px;font-size:12px;color:var(--muted)}
+/* composer */
+.composer{margin:0 20px 18px;border:1px solid #bbbabb;border-radius:8px;position:relative;background:#fff}
+.composer:focus-within{border-color:#868686;box-shadow:0 0 0 1px #868686}
+.fmt{display:flex;gap:2px;padding:4px 6px;background:#f8f8f8;border-radius:8px 8px 0 0;color:#8a898a}
+.fmt span{width:28px;height:26px;display:grid;place-items:center;font-size:13px;font-weight:900}
+textarea{width:100%;border:0;resize:none;font:inherit;padding:10px 12px;outline:none;min-height:42px;max-height:180px;display:block}
+.comp-foot{display:flex;align-items:center;padding:2px 6px 6px;color:#616061}
+.send{margin-left:auto;width:32px;height:28px;border-radius:5px;border:0;background:#f2f2f2;color:#8a898a;display:grid;place-items:center}
+.send.ready{background:var(--green);color:#fff}
+.slash{position:absolute;left:0;right:0;bottom:calc(100% + 6px);background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.14);overflow:hidden;display:none}
+.slash.show{display:block}
+.slash .s-head{font-size:12px;font-weight:700;color:var(--muted);padding:8px 14px;border-bottom:1px solid var(--line-soft)}
+.slash .opt{padding:8px 14px;display:flex;gap:10px;align-items:center;cursor:pointer}
+.slash .opt.on{background:#1264a3;color:#fff}
+.slash .opt.on .d{color:rgba(255,255,255,.85)}
+.slash .opt .c{font-weight:900}.slash .opt .d{color:var(--muted);font-size:13px}
+.hint{font-size:11.5px;color:var(--muted);text-align:right;padding:0 22px;margin-top:-14px;margin-bottom:6px;height:14px}
+/* home tab */
+.home{padding:24px 28px;overflow:auto;flex:1;max-width:760px}
+.home h2{font-size:22px;margin:0 0 4px}
+.home .lead{color:var(--muted);margin:0 0 18px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
+.stat{border:1px solid var(--line);border-radius:10px;padding:12px}
+.stat .n{font-size:24px;font-weight:900}.stat .l{font-size:13px;color:var(--muted)}
+.meter{height:6px;background:#eee;border-radius:3px;margin-top:6px;overflow:hidden}.meter i{display:block;height:100%;background:var(--green)}
+.home h4{margin:18px 0 8px;font-size:15px}
+.row{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line-soft)}
+.row .av{width:32px;height:32px;font-size:12px}
+.row .sub{font-size:13px;color:var(--muted)}
+.toggle{width:36px;height:20px;border-radius:10px;background:#c4c4c4;position:relative;border:0;flex:none}
+.toggle:after{content:"";position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;top:2px;left:2px;transition:.15s}
+.toggle.on{background:var(--green)}.toggle.on:after{left:18px}
+/* modal */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:20}
+.scrim.show{display:flex}
+.modal{width:min(560px,94vw);max-height:88vh;background:#fff;border-radius:10px;display:flex;flex-direction:column;box-shadow:0 18px 50px rgba(0,0,0,.3)}
+.m-head{display:flex;align-items:center;gap:10px;padding:18px 24px 14px}
+.m-head h2{font-size:20px;margin:0;font-weight:900}
+.m-head .x{margin-left:auto;color:var(--muted)}
+.m-head .x:hover{background:#f2f2f2}
+#mform{display:flex;flex-direction:column;min-height:0;flex:1}
+.m-body{min-height:0;padding:4px 24px 18px;overflow:auto;display:flex;flex-direction:column;gap:18px}
+.m-foot{display:flex;justify-content:flex-end;gap:10px;padding:14px 24px;border-top:1px solid var(--line-soft)}
+.field label.lbl{display:block;font-weight:900;margin-bottom:6px;font-size:15px}
+.field .help{font-size:13px;color:var(--muted);margin:-2px 0 8px}
+.field select,.field input[type=text]{width:100%;height:38px;border:1px solid #bbbabb;border-radius:6px;padding:0 10px;font:inherit;background:#fff}
+.opts{display:flex;flex-direction:column;gap:6px}
+.opts.grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px}
+.opts label{display:flex;gap:8px;align-items:flex-start;font-size:14.5px;line-height:1.3;cursor:pointer}
+.opts input{margin-top:2px;accent-color:#1264a3;width:15px;height:15px;flex:none}
+.pill-opts{display:flex;gap:8px;flex-wrap:wrap}
+.pill-opts label{border:1px solid #bbbabb;border-radius:18px;padding:6px 12px;font-size:14px;cursor:pointer;user-select:none}
+.pill-opts input{display:none}
+.pill-opts label:has(input:checked){background:#e8f5fa;border-color:#1264a3;color:#1264a3;font-weight:700}
+.err{color:#e01e5a;font-size:13px;margin-top:6px;display:none}
+.err.show{display:block}
+/* demo panel */
+.demo-btn{position:fixed;right:16px;bottom:16px;z-index:15;background:#1d1c1d;color:#fff;border:0;border-radius:20px;padding:8px 14px;font-weight:700;font-size:13px;box-shadow:0 4px 12px rgba(0,0,0,.25)}
+.demo{position:fixed;right:16px;bottom:60px;z-index:15;background:#1d1c1d;color:#fff;border-radius:12px;padding:12px;width:250px;display:none;flex-direction:column;gap:6px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+.demo.show{display:flex}
+.demo b{font-size:12px;letter-spacing:.4px;opacity:.7;margin-bottom:2px}
+.demo button{background:rgba(255,255,255,.1);border:0;color:#fff;text-align:left;padding:8px 10px;border-radius:7px;font-size:13px}
+.demo button:hover{background:rgba(255,255,255,.2)}
+.demo small{opacity:.6;font-size:11px;line-height:1.35}
+.toast{position:fixed;left:50%;top:56px;transform:translateX(-50%);background:#1d1c1d;color:#fff;padding:8px 14px;border-radius:8px;font-size:13px;z-index:30;opacity:0;transition:.2s;pointer-events:none}
+.toast.show{opacity:1}
+@media (max-width:820px){.body{grid-template-columns:0 0 1fr;padding:0}.rail,.side{display:none}.main{border-radius:0}}
+.prompts{display:flex;flex-direction:column;gap:8px}
+.prompt{border-left:4px solid #611f69;padding:2px 0 2px 12px;font-size:14px;line-height:1.45}
+.prompt .k{font-size:12px;font-weight:900;color:#611f69;text-transform:none}
+.tip{background:#eef6fb;border-radius:8px;padding:9px 12px;font-size:13.5px;line-height:1.4}
+.links{display:flex;gap:6px;flex-wrap:wrap}
+.linkchip{font-size:12.5px;border:1px solid var(--line);border-radius:6px;padding:3px 8px;color:var(--blue);background:#fff}
+.linkchip:hover{background:#f4f9fc}
+.about{font-size:14px;line-height:1.45;background:#f8f8f8;border-radius:8px;padding:9px 12px}
+.about i{color:var(--muted);font-style:normal;font-size:12px;font-weight:700;display:block;margin-bottom:2px}
+.field textarea{border:1px solid #bbbabb;border-radius:6px;padding:8px 10px;min-height:64px;font-size:14.5px}
+.field textarea:focus,.field select:focus,.field input:focus{outline:2px solid #1264a3;outline-offset:-1px}
+.cal-row{display:flex;gap:8px;flex-wrap:wrap}
+.circle{position:relative;border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;align-items:center;gap:0;overflow-x:auto}
+.node{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:96px;flex:none;text-align:center}
+.node .av{width:48px;height:48px;font-size:16px;border-radius:12px}
+.node .nm{font-weight:900;font-size:14px}.node .rl{font-size:12px;color:var(--muted);line-height:1.3}
+.node.ghost .av{background:#f2f2f2!important;color:#8a898a;border:2px dashed #ccc}
+.edge{flex:1;min-width:76px;height:2px;background:repeating-linear-gradient(90deg,#611f69 0 6px,transparent 6px 11px);position:relative;margin-bottom:38px}
+.edge span{position:absolute;top:-20px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--muted);white-space:nowrap;font-weight:700}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="nav">
+      <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 4l-6 6 6 6"/></svg>
+      <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 4l6 6-6 6"/></svg>
+    </div>
+    <div class="search-wrap">
+      <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="#fff" stroke-width="2"><circle cx="8.5" cy="8.5" r="6"/><path d="M13 13l5 5"/></svg>
+      <input class="search" id="search" placeholder="Search Design Lab" aria-label="Jump to a conversation">
+    </div>
+    <span class="proto-chip">PROTOTYPE</span>
+  </div>
+  <div class="body">
+    <nav class="rail">
+      <div class="ws" title="Design Lab workspace">DL</div>
+      <button class="rail-item on"><span class="ic"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l7-6 7 6v8H3z"/></svg></span>Home</button>
+      <button class="rail-item" data-go="bot"><span class="ic"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 4h14v10H8l-5 3z"/></svg></span>DMs</button>
+      <button class="rail-item"><span class="ic"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 14V9a5 5 0 0110 0v5l2 2H3zM8 18h4"/></svg></span>Activity</button>
+      <button class="rail-item"><span class="ic"><svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><circle cx="4" cy="10" r="1.8"/><circle cx="10" cy="10" r="1.8"/><circle cx="16" cy="10" r="1.8"/></svg></span>More</button>
+      <div class="me"><div class="av" style="background:#e8912d">MK</div><span class="dot"></span></div>
+    </nav>
+    <aside class="side" id="side"></aside>
+    <main class="main" id="main"></main>
+  </div>
+</div>
+
+<div class="scrim" id="scrim"><div class="modal" id="modal" role="dialog" aria-modal="true"></div></div>
+<button class="demo-btn" id="demoBtn">⚙︎ Demo controls</button>
+<div class="demo" id="demo">
+  <b>FACILITATOR CONTROLS</b>
+  <button data-demo="checkin">⏩ Skip to after the 1-on-1</button>
+  <button data-demo="next">📬 Jump 2 weeks: deliver next match</button>
+  <button data-demo="reset">↺ Reset prototype</button>
+  <small>Hidden from participants during testing. Progress saves in this browser.</small>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------------- data ---------------- */
+const BOT = 'MagicMatch';
+const ME = {id:'me', name:'Masha Kuritsyn', short:'Masha', color:'#e8912d', init:'MK'};
+const LABS = ['Undergrad Design Programs','Health & Wellbeing','AI & Automation','Civic & Community Design','Learning & Education','Accessibility & Aging','Healthcare Design'];
+const TYPES = ['Undergraduate researcher','Master\'s student','PhD student','Faculty or staff researcher','Interested in research / involved in the lab'];
+const TYPE_SHORT = {'Undergraduate researcher':'undergrad researchers','Master\'s student':'master\'s students','PhD student':'PhD students','Faculty or staff researcher':'faculty and staff researchers','Interested in research / involved in the lab':'people involved in the lab'};
+const PATHS = {research:'Research', mentorship:'Mentorship', friend:'Make a friend in the lab'};
+const PATH_VERB = {research:'talk research', mentorship:'find mentorship', friend:'make a friend in the lab'};
+const PEOPLE = [
+  {id:'jd',name:'JD',short:'JD',init:'JD',color:'#1264a3',type:'Faculty or staff researcher',lab:'Civic & Community Design',offers:['mentorship','research'],
+   research:'Community-based design research with San Diego partners',
+   about:'Happy to help students figure out how to get into research and which labs fit them.',
+   links:[{t:'📄 Lab project page'},{t:'📄 Recent paper (2025)'}],
+   replies:['Hi Masha! Thanks for saying hi. Honestly, I found my first research project by asking a lot of people exactly this kind of question 🙂','What kind of research are you curious about? Happy to point you to a few people and labs.','Sounds good, see you then!']},
+  {id:'priya',name:'Priya Natarajan',short:'Priya',init:'PN',color:'#2eb67d',type:'PhD student',lab:'Health & Wellbeing',offers:['research','mentorship','friend'],
+   research:'How wearables nudge better sleep habits',
+   about:'Forming my PhD committee this year. Love talking interview methods with anyone.',
+   links:[{t:'📄 Draft paper: nudging sleep with wearables'},{t:'🔗 Personal site'}],
+   replies:['Hi Masha!! So nice to meet you 😊 I\'d love to hear what got you into the Design Lab.','For mentorship stuff, I wish someone had told me early that it\'s okay to cold-message people here. Everyone is nicer than you think. Want to grab coffee this week?','Sounds great, looking forward to it!']},
+  {id:'joyce',name:'Joyce',short:'Joyce',init:'J',color:'#e01e5a',type:'Undergraduate researcher',lab:'Learning & Education',offers:['friend','research'],
+   research:'Undergrad RA on a classroom technology study',
+   about:'Looking for other undergrads in the lab to study with and share research tips.',
+   links:[{t:'🔗 Portfolio'}],
+   replies:['omg hi!! I was hoping I\'d get matched with another undergrad 😭','How did you end up in your lab? I literally just emailed a grad student and hoped for the best lol','yay ok let\'s do it!!']},
+  {id:'alan',name:'Dr. Alan Okafor',short:'Alan',init:'AO',color:'#4a154b',type:'Faculty or staff researcher',lab:'AI & Automation',offers:['mentorship','research'],
+   research:'Human–AI teaming in clinical settings',about:'Open to meeting students shaping a research direction or committee.',links:[{t:'📄 Lab publications'}],
+   replies:['Hi Masha, happy to connect.','What are you hoping to get out of a chat: something specific, or a general direction conversation? Either is fine.','Great, see you then.']},
+  {id:'lena',name:'Lena Park',short:'Lena',init:'LP',color:'#7c3085',type:'PhD student',lab:'Civic & Community Design',offers:['research','friend'],
+   research:'Turning climate datasets into physical sculptures',about:'Always up for swapping work and giving feedback.',links:[{t:'🔗 Exhibit page'}],
+   replies:['Hi Masha! Lovely to meet you.','Would you want to swap work sometime? I\'d love a UX perspective on an exhibit I\'m planning.','Lovely, talk soon!']},
+  {id:'marcus',name:'Marcus Chen',short:'Marcus',init:'MC',color:'#36c5f0',type:'Master\'s student',lab:'AI & Automation',offers:['research','friend'],
+   research:'Data dashboards for community groups',about:'Always looking for a designer\'s eye on my prototypes.',links:[{t:'🔗 GitHub'}],
+   replies:['Hey Masha!','I could really use design feedback on a prototype I\'m showing next week, if you\'d be up for a swap?','Perfect, thanks!']},
+  {id:'sofia',name:'Sofia Reyes',short:'Sofia',init:'SR',color:'#ecb22e',type:'Interested in research / involved in the lab',lab:'Accessibility & Aging',offers:['friend'],
+   research:'Starting an accessibility audit club',about:'Not on a research team yet, but want to meet people who are.',links:[],
+   replies:['hi!! so glad this bot exists','would you want to come to a design lab event together sometime?','yay!!']}
+];
+const PROMPTS = {
+  mentorship:['How did you find your way into research here?','What do you wish someone had told you in your first year at the lab?','Who else in the lab should I meet?'],
+  research:['What question is your research trying to answer, in one sentence?','What\'s a paper or project that changed how you think about your work?','What\'s the most surprising thing a participant has told you?'],
+  friend:['What\'s your favorite spot to work on campus?','What got you into the Design Lab in the first place?','What\'s something fun you\'ve done here outside of research?']
+};
+const SLOTS = ['Wed, Dec 3 · 2:00 PM','Thu, Dec 4 · 11:00 AM','Fri, Dec 5 · 10:30 AM'];
+const PLACES = ['Coffee in the Design Lab kitchen','Walk around campus','Zoom'];
+const CALS = {google:'Google Calendar', outlook:'Outlook', none:'No calendar'};
+const DATES = ['Mon, Nov 24','Mon, Dec 8','Mon, Dec 22','Mon, Jan 5','Mon, Jan 19','Mon, Feb 2','Mon, Feb 16','Mon, Mar 2'];
+
+/* ---------------- state ---------------- */
+const KEY = 'magicmatch-proto-v1';
+let S, timers = [];
+function fresh(){
+  return {
+    clock: 9*60, active:'bot', tab:'messages', unread:{}, msgId:1,
+    profile:null, paused:false, seen:[], round:0, connections:[], promptIdx:{},
+    convs:{
+      general:{type:'channel',name:'general',members:212,msgs:[]},
+      events:{type:'channel',name:'design-lab-events',members:148,msgs:[]},
+      meep:{type:'channel',name:'team-meep',private:true,members:3,msgs:[]},
+      phds:{type:'channel',name:'phds-here',members:23,msgs:[]},
+      bot:{type:'app',name:BOT,msgs:[]},
+      evan:{type:'dm',name:'Evan',person:{name:'Evan',short:'Evan',init:'E',color:'#2bac76'},msgs:[]},
+      phoebe:{type:'dm',name:'Phoebe',person:{name:'Phoebe',short:'Phoebe',init:'P',color:'#e01e5a'},msgs:[]}
+    },
+    dmOrder:['evan','phoebe']
+  };
+}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+function load(){ try{ const v = localStorage.getItem(KEY); if(v) return JSON.parse(v); }catch(e){} return null; }
+
+/* ---------------- helpers ---------------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function md(s){
+  return esc(s).replace(/`([^`]+)`/g,'<code>$1</code>')
+    .replace(/\*([^*\n]+)\*/g,'<b>$1</b>')
+    .replace(/(^|\s)_([^_\n]+)_/g,'$1<i>$2</i>')
+    .replace(/@Masha/g,'<span class="mention me">@Masha</span>')
+    .replace(/@(JD|Priya|Joyce|Alan|Lena|Marcus|Sofia|Evan|Phoebe|channel)\b/g,'<span class="mention">@$1</span>');
+}
+function fmtTime(m){ const h=Math.floor(m/60)%24, mm=m%60; return ((h%12)||12)+':'+String(mm).padStart(2,'0')+' '+(h<12?'AM':'PM'); }
+function tick(n=1){ S.clock += n; return S.clock; }
+function person(id){ return PEOPLE.find(p=>p.id===id); }
+function sender(from){
+  if(from==='me') return ME;
+  if(from==='bot') return {name:BOT, bot:true};
+  if(from==='evan'||from==='phoebe') return S.convs[from].person;
+  return person(from) || {name:from, init:from.slice(0,2).toUpperCase(), color:'#888'};
+}
+const MARK = (id)=>`<svg viewBox="0 0 64 64" width="100%" height="100%" aria-hidden="true"><defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#611f69"/><stop offset="1" stop-color="#e01e5a"/></linearGradient></defs><rect width="64" height="64" rx="15" fill="url(#${id})"/><circle cx="25" cy="37" r="12" fill="none" stroke="#fff" stroke-width="5"/><circle cx="39" cy="37" r="12" fill="none" stroke="#fff" stroke-width="5"/><path d="M32 11.5 Q33.44 18.06 40 19.5 Q33.44 20.94 32 27.5 Q30.56 20.94 24 19.5 Q30.56 18.06 32 11.5Z" fill="#ffd166"/></svg>`;
+let markN=0;
+function botAvatar(size){ const st = size?`width:${size}px;height:${size}px;`:''; return `<div class="av" style="${st}background:none;padding:0">${MARK('mk'+(markN++))}</div>`; }
+function avatar(p){ return p.bot ? botAvatar() : `<div class="av" style="background:${p.color}">${esc(p.init)}</div>`; }
+function toast(t){ const el=$('#toast'); el.textContent=t; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),1900); }
+function later(fn, ms){ const t=setTimeout(fn, ms); timers.push(t); }
+function nextDate(){ return DATES[Math.min(S.round+1, DATES.length-1)]; }
+
+/* ---------------- posting ---------------- */
+function post(convId, msg){
+  const c = S.convs[convId];
+  msg.id = S.msgId++; msg.ts = msg.ts || tick();
+  msg.reacts = msg.reacts || {};
+  c.msgs.push(msg);
+  if(convId !== S.active || S.tab!=='messages') { if(msg.from!=='me') S.unread[convId]=(S.unread[convId]||0)+1; }
+  save(); render();
+  return msg;
+}
+let typingFor = null;
+function say(convId, from, msg, delay=900){
+  typingFor = {conv:convId, from}; renderTyping();
+  later(()=>{ typingFor=null; post(convId, Object.assign({from}, msg)); }, delay);
+}
+function findMsg(id){ for(const k in S.convs){ const m=S.convs[k].msgs.find(x=>x.id==id); if(m) return [k,m]; } return [null,null]; }
+function closeBlocks(msgId, label){
+  const [,m] = findMsg(msgId); if(!m) return;
+  m.blocks = m.blocks.map(b => b.type==='actions' ? {type:'done', text:label} : b);
+  save();
+}
+
+/* ---------------- seed ---------------- */
+function seed(){
+  S.clock = 8*60+12;
+  post('general',{from:'dev',text:'Welcome to everyone joining the Design Lab this quarter! 🎉 Say hi in here, and check #design-lab-events for this week\'s talk.',reacts:{'👋':{n:31},'🎉':{n:12}}});
+  tick(6);
+  post('general',{from:'bot',text:'Hi @channel 👋 I\'m *MagicMatch* ✨ Every 2 weeks I introduce you to one person in the Design Lab you haven\'t met: a researcher, a mentor, or just a new friend. I make the intro and tell you what to talk about, so you never have to cold-message anyone. DM me or type `/magicmatch` to join.',reacts:{'✨':{n:22},'🙌':{n:9}}});
+  post('events',{from:'dev',text:'📣 *Design Lab Talk this Thursday, 4:00 PM*: "Designing with, not for: community co-design in practice." Snacks in the kitchen at 3:45!',reacts:{'🍪':{n:14},'👀':{n:7}}});
+  post('meep',{from:'evan',text:'pitch run-through tomorrow before session?'});
+  post('meep',{from:'phoebe',text:'yes!! I\'ll bring the updated storyboard'});
+  post('phds',{from:'priya',text:'anyone else doing quals this spring? looking for a study buddy 📚'});
+  post('evan',{from:'evan',text:'did you see magicmatch is live in #general?? 👀'});
+  post('phoebe',{from:'phoebe',text:'can you send me the figma link when you get a sec'});
+  S.clock = 9*60;
+  post('bot',{from:'bot',text:'Hi @Masha! 👋 I\'m *MagicMatch* ✨\n\nReaching out to a researcher you don\'t know feels uncomfortable, and first conversations can be awkward. So I do the awkward part for you:\n\n• Every *2 weeks* I introduce you to *one person* in the lab\n• I tell you *what they research* and *what to talk about*\n• You just reply here on Slack. No cold emails.',
+    blocks:[{type:'actions',items:[{label:'Get started',style:'primary',act:'onboard'},{label:'How does it work?',act:'how'}]},{type:'ctx',text:'⏱ Takes about 2 minutes · Pause or leave anytime'}]});
+  S.unread = {bot:1, evan:1, phoebe:1};
+  save();
+}
+
+/* ---------------- matching ---------------- */
+function pickMatch(){
+  const pr=S.profile;
+  let pool = PEOPLE.filter(p=>!S.seen.includes(p.id) && p.lab!==pr.lab);
+  if(pr.meet!=='anyone') { const f = pool.filter(p=>p.type===pr.meet); if(f.length) pool=f; }
+  const story = pool.filter(p=>['jd','priya','joyce'].includes(p.id));
+  if(story.length) return story[0];
+  const fit = pool.filter(p=>p.offers.includes(pr.path));
+  return (fit[0] || pool[0]) || null;
+}
+function whyList(p){
+  const pr=S.profile, out=[];
+  if(p.offers.includes(pr.path)) out.push(`You want to *${PATH_VERB[pr.path]}*, and ${p.short} said they're open to it`);
+  out.push(`You're in different labs: *${pr.lab}* and *${p.lab}*`);
+  if(p.type===pr.type) out.push(`You're both ${TYPE_SHORT[p.type]}, so you're in a similar spot`);
+  else if(pr.meet===p.type) out.push(`You asked to meet ${TYPE_SHORT[p.type]}`);
+  else out.push(`${p.short} is a ${p.type.toLowerCase()}: a view you don't usually get`);
+  return out;
+}
+function promptsFor(p){
+  const pr=S.profile, i=S.promptIdx[p.id]||0;
+  const first = pr.path==='friend' ? 'friend' : 'mentorship';
+  return [
+    {k: first==='friend'?'Getting to know each other':'Mentorship', q: PROMPTS[first][i%3]},
+    {k:'Research interest', q: `“${p.research}”: ` + PROMPTS.research[i%3]}
+  ];
+}
+function sendMatch(early){
+  if(!S.profile) return say('bot','bot',{text:'Let\'s set up your profile first so I can find someone good for you.',blocks:[{type:'actions',items:[{label:'Get started',style:'primary',act:'onboard'}]}]});
+  if(S.paused) return say('bot','bot',{text:'Matching is *paused*, so I won\'t send new intros.',blocks:[{type:'actions',items:[{label:'Resume matching',style:'primary',act:'resume'}]}]});
+  const pending = S.connections.length && S.connections[0].round===S.round && !early;
+  if(pending) return say('bot','bot',{text:`You already have this round's match 🙂 Your next person arrives *${nextDate()}*. One new person every 2 weeks keeps it easy.`,blocks:[{type:'actions',items:[{label:'Match me early',act:'early'},{label:'Change how often',act:'settings'}]}]});
+  const p = pickMatch();
+  if(!p) return say('bot','bot',{text:'You\'ve met everyone I can match you with right now! 🎉 I\'ll ping you when new people join.'});
+  if(S.connections.length) S.round++;
+  S.seen.push(p.id);
+  S.connections.unshift({pid:p.id, round:S.round, date:DATES[Math.min(S.round,DATES.length-1)], slot:null, rating:null});
+  save();
+  say('bot','bot',{text:`✨ Your match for the next 2 weeks`,
+    blocks:[{type:'match',pid:p.id},
+      {type:'ctx',text:`1-on-1 · ${p.short} got the same intro about you · Skipping is anonymous`},
+      {type:'actions',items:[{label:'Say hi 👋',style:'primary',act:'hi',pid:p.id},{label:'📅 Find a time',act:'time',pid:p.id},{label:'Not this time',act:'skip',pid:p.id}]}]},1400);
+}
+function convFor(pid){
+  const id='m_'+pid;
+  if(!S.convs[id]){ const p=person(pid); S.convs[id]={type:'group',name:p.name,pid,msgs:[],step:0}; S.dmOrder.unshift(id); }
+  return id;
+}
+function openIntro(pid, then){
+  const p=person(pid), id=convFor(pid), c=S.convs[id];
+  if(!c.introduced){
+    c.introduced=true;
+    post(id,{from:'bot',text:`Hi @Masha and @${p.short}! 👋 I matched you two for a 1-on-1.`,
+      blocks:[{type:'whybox',pid},{type:'promptbox',pid},{type:'ctx',text:'Just reply here, no email needed. I\'ll check in once after you meet.'}]});
+  }
+  go(id); if(then) then(id);
+}
+
+/* ---------------- actions ---------------- */
+const ACT = {
+  onboard(){ openPrefs(true); },
+  settings(){ openPrefs(false); },
+  how(){
+    say('bot','bot',{text:'*How MagicMatch works*\n1. Tell me what type of researcher you are, who you\'d like to meet, and what you\'re looking for: *research*, *mentorship*, or *a friend in the lab*.\n2. Every 2 weeks I pick *one person* from a different lab.\n3. You both get the same intro: what they research, why you matched, and what to talk about.\n4. Say hi, find a time on your calendars, or skip. Skips are anonymous.\n5. After you meet, I check in once.',blocks:[{type:'actions',items:[{label:'Get started',style:'primary',act:'onboard'}]}]});
+  },
+  match(){ sendMatch(); },
+  early(m){ if(m) closeBlocks(m.id,'⏩ Matching early'); sendMatch(true); },
+  hi(m,a){
+    closeBlocks(m.id,`✅ You said hi to ${person(a.pid).short}`);
+    openIntro(a.pid, ()=>{ const ta=$('#ta'); if(ta){ ta.value=`Hi ${person(a.pid).short}! `; ta.focus(); updSend(); } });
+  },
+  time(m,a){ openSchedule(a.pid, m && m.id); },
+  skip(m,a){ openSkip(a.pid, m.id); },
+  resume(m){ S.paused=false; if(m) closeBlocks(m.id,'▶️ Matching resumed'); say('bot','bot',{text:'Welcome back! ▶️ Matching is on again.',blocks:[{type:'actions',items:[{label:'Find me a match',style:'primary',act:'match'}]}]}); },
+  pause(){ S.paused=true; say('bot','bot',{text:'Got it, matching is *paused* ⏸ I won\'t send any intros until you turn it back on.',blocks:[{type:'actions',items:[{label:'Resume matching',act:'resume'}]}]}); },
+  addcal(m,a){
+    const [,msg]=findMsg(a.msg||m.id); const b=msg.blocks.find(b=>b.type==='invite'); if(b){ b.added=true; }
+    if(!S.profile.calendar || S.profile.calendar==='none') S.profile.calendar='google';
+    save(); render(); toast(`Added to ${CALS[S.profile.calendar]}`);
+  },
+  rate(m,a){
+    const p=person(a.pid);
+    closeBlocks(m.id,`You said: ${a.label}`);
+    const conn = S.connections.find(c=>c.pid===a.pid); if(conn) conn.rating=a.label;
+    if(a.v==='none') say('bot','bot',{text:`No worries, it happens! Want me to nudge you both to find a new time?`,blocks:[{type:'actions',items:[{label:'Nudge us',style:'primary',act:'nudge',pid:a.pid},{label:'Move on',act:'moveon'}]}]});
+    else if(a.v==='meh') say('bot','bot',{text:`Thanks for being honest 🙏 What would have made it better?`,blocks:[{type:'actions',items:[{label:'More in common',act:'fb'},{label:'Better prompts',act:'fb'},{label:'Different type of person',act:'fb'}]}]});
+    else say('bot','bot',{text:`Love that! 🎉 Want to stay in touch with ${p.short}?`,blocks:[{type:'actions',items:[{label:'Remind us in a month',style:'primary',act:'followup',pid:a.pid},{label:'We\'ve got it from here',act:'moveon'}]}]});
+  },
+  fb(m){ closeBlocks(m.id,'✅ Feedback noted'); say('bot','bot',{text:`Noted! I'll use that for your next match on *${nextDate()}*. 📬`}); },
+  nudge(m,a){ closeBlocks(m.id,'✅ Nudge sent'); const id=convFor(a.pid); post(id,{from:'bot',text:`Hey @Masha and @${person(a.pid).short}, looks like your 1-on-1 didn't happen yet. Want to try another time? No pressure.`,blocks:[{type:'actions',items:[{label:'📅 Find a time',act:'time',pid:a.pid}]}]}); toast('Nudge sent to you both'); },
+  followup(m,a){ closeBlocks(m.id,'✅ I\'ll remind you both in a month'); const c=S.connections.find(c=>c.pid===a.pid); if(c) c.followup=true; save(); say('bot','bot',{text:`Done ✅ Your next new person arrives *${nextDate()}*. Check the Home tab to see everyone you've met.`,blocks:[{type:'actions',items:[{label:'Open Home',act:'home'}]}]}); },
+  moveon(m){ closeBlocks(m.id,'👍 Moving on'); say('bot','bot',{text:`Sounds good! Your next match arrives *${nextDate()}*. 📬`}); },
+  home(){ S.tab='home'; S.active='bot'; save(); render(); },
+  gobot(){ go('bot'); }
+};
+
+function scheduled(pid, slot, place){
+  const c = S.connections.find(c=>c.pid===pid); if(c){ c.slot=slot; c.place=place; }
+  save();
+  later(()=>post('bot',{from:'bot',text:`📅 You and ${person(pid).short} are meeting *${slot}* (${place}). I'll check in once afterward.`}),1400);
+}
+function checkIn(){
+  const c = S.connections.find(c=>!c.rating) || S.connections[0];
+  if(!c){ toast('Get a match first'); return; }
+  const p=person(c.pid);
+  post('bot',{from:'bot',text:`Hey @Masha, how did your 1-on-1 with *${p.name}* go?`,blocks:[{type:'actions',items:[
+    {label:'😍 Great',act:'rate',pid:c.pid,v:'great'},{label:'🙂 Good',act:'rate',pid:c.pid,v:'good'},{label:'😬 Awkward',act:'rate',pid:c.pid,v:'meh'},{label:'🚫 Didn\'t happen',act:'rate',pid:c.pid,v:'none'}]},
+    {type:'ctx',text:'🔒 Only you see this. Your answer is never shared with '+p.short+'.'}]});
+}
+
+/* ---------------- slash commands & bot chat ---------------- */
+const CMDS = [
+  {c:'/magicmatch',d:'Get your match'},
+  {c:'/magicmatch settings',d:'Edit your profile and preferences'},
+  {c:'/magicmatch pause',d:'Pause matching'},
+  {c:'/magicmatch resume',d:'Resume matching'},
+  {c:'/magicmatch help',d:'Show what I can do'}
+];
+const HELP = 'Here\'s what I can do:\n• `/magicmatch`: get your match\n• `/magicmatch settings`: change your profile or how often you\'re matched\n• `/magicmatch pause` / `resume`: take a break anytime';
+function runSlash(txt, convId){
+  const arg = txt.replace(/^\/magicmatch\s*/,'').trim().toLowerCase();
+  const eph = (text, blocks)=>post(convId,{from:'bot',ephemeral:true,text,blocks});
+  if(convId!=='bot'){
+    if(arg==='settings') { openPrefs(!S.profile); return; }
+    if(arg==='help'){ eph(HELP,[{type:'actions',items:[{label:'Open MagicMatch',act:'gobot'}]}]); return; }
+    eph(arg==='pause' ? 'Matching paused ⏸' : arg==='resume' ? 'Matching resumed ▶️' : 'Check our DM for your match 👉',[{type:'actions',items:[{label:'Open MagicMatch',act:'gobot'}]}]);
+    if(arg==='pause') S.paused=true; else if(arg==='resume') S.paused=false; else later(()=>sendMatch(),300);
+    save(); return;
+  }
+  if(arg==='settings') return openPrefs(!S.profile);
+  if(arg==='pause') return ACT.pause();
+  if(arg==='resume') return ACT.resume();
+  if(arg==='help') return help();
+  sendMatch();
+}
+function help(){ say('bot','bot',{text:HELP+'\n\nYou can also just type *match*, *settings*, or *pause* here.',blocks:[{type:'actions',items:[{label:'Find me a match',style:'primary',act:'match'},{label:'Settings',act:'settings'}]}]}); }
+function botReply(t){
+  const s=t.toLowerCase();
+  if(/email/.test(s)) return say('bot','bot',{text:'Slack is totally fine here! 🙂 Everyone who joins MagicMatch has said they\'re happy to get a Slack message, so you never need to write a formal email.'});
+  if(/^(hi|hey|hello)\b/.test(s)) return say('bot','bot',{text:S.profile?`Hey Masha! 👋 Want your match, or to change your settings?`:`Hi! Let's get you set up.`,blocks:[{type:'actions',items:S.profile?[{label:'Find me a match',style:'primary',act:'match'},{label:'Settings',act:'settings'}]:[{label:'Get started',style:'primary',act:'onboard'}]}]});
+  if(/match|someone|meet|intro/.test(s)) return sendMatch();
+  if(/setting|pref|change|edit|often/.test(s)) return openPrefs(!S.profile);
+  if(/resume|unpause/.test(s)) return ACT.resume();
+  if(/pause|stop|break|busy/.test(s)) return ACT.pause();
+  if(/help|how|\?/.test(s)) return help();
+  if(/thank/.test(s)) return say('bot','bot',{text:'Anytime! ✨'});
+  say('bot','bot',{text:'I\'m a pretty simple bot 🙂 Try one of these:',blocks:[{type:'actions',items:[{label:'Find me a match',style:'primary',act:'match'},{label:'Settings',act:'settings'},{label:'Pause matching',act:'pause'}]}]});
+}
+function simReply(convId){
+  const c=S.convs[convId]; if(!c||!c.pid) return;
+  const p=person(c.pid); if(c.step>=p.replies.length) return;
+  const txt = p.replies[c.step]; c.step++;
+  say(convId, c.pid, {text:txt}, 1600+Math.min(txt.length*18,2200));
+}
+
+/* ---------------- modals ---------------- */
+let modalSubmit=null, modalReopen=null;
+function openModal({title, body, submit='Submit', onSubmit, cancel='Cancel'}){
+  $('#modal').innerHTML = `<div class="m-head">${botAvatar(28)}<h2>${title}</h2><button class="icon-btn x" data-close aria-label="Close"><svg width="18" height="18" viewBox="0 0 20 20" stroke="currentColor" stroke-width="2"><path d="M5 5l10 10M15 5L5 15"/></svg></button></div>
+    <form id="mform"><div class="m-body">${body}</div><div class="m-foot"><button type="button" class="btn" data-close>${cancel}</button><button class="btn primary" type="submit">${submit}</button></div></form>`;
+  modalSubmit = onSubmit;
+  $('#scrim').classList.add('show');
+  const f=$('#mform'); const first=f.querySelector('select,input,textarea'); if(first) first.focus();
+}
+function closeModal(){ $('#scrim').classList.remove('show'); modalSubmit=null; }
+function err(name, show){ const e=document.querySelector(`[data-err="${name}"]`); if(e) e.classList.toggle('show',show); return show; }
+const sel = (name, opts, cur, id) => `<select id="${id||name}" name="${name}">${opts.map(([v,l])=>`<option value="${esc(v)}" ${cur===v?'selected':''}>${esc(l)}</option>`).join('')}</select>`;
+
+function openPrefs(first){
+  const p = S.profile || {type:'Undergraduate researcher', meet:'anyone', lab:LABS[0], path:'', detail:'', about:'', links:'', freq:'2w', calendar:'google'};
+  const body = `
+   ${first?'<p style="margin:0;color:#616061;font-size:14px">Your match sees your type, lab, what you\'re looking for, and the “about you” section. Nothing else.</p>':''}
+   <div class="field"><label class="lbl" for="type">What type of researcher are you?</label>${sel('type',TYPES.map(t=>[t,t]),p.type)}</div>
+   <div class="field"><label class="lbl" for="lab">Your lab or area</label>${sel('lab',LABS.map(l=>[l,l]),p.lab)}</div>
+   <div class="field"><label class="lbl" for="meet">Who do you want to meet?</label>${sel('meet',[['anyone','Anyone in the lab'],...TYPES.map(t=>[t,TYPE_SHORT[t][0].toUpperCase()+TYPE_SHORT[t].slice(1)])],p.meet)}</div>
+   <div class="field"><label class="lbl" for="path">What are you interested in?</label>${sel('path',[['','Choose one…'],...Object.entries(PATHS)],p.path)}<div class="err" data-err="path">Pick what you're looking for.</div></div>
+   <div class="field"><label class="lbl" for="detail">Tell us more about what you're interested in</label><p class="help">Topics, methods, questions. This helps me find someone good.</p><textarea id="detail" name="detail" placeholder="e.g. Health tech, interview methods, how to get into a research lab as an undergrad">${esc(p.detail)}</textarea><div class="err" data-err="detail">Add a few words so I can match you well.</div></div>
+   <div class="field"><label class="lbl" for="about">About you <span style="font-weight:400;color:#616061">(shown to your match)</span></label><p class="help">What are you working on? What do you want to meet people for?</p><textarea id="about" name="about" placeholder="e.g. I'm an undergrad on Team MEEP designing a Slack bot. I'd love to learn how people found their research.">${esc(p.about)}</textarea></div>
+   <div class="field"><label class="lbl" for="links">Links to check out <span style="font-weight:400;color:#616061">(optional)</span></label><input type="text" id="links" name="links" value="${esc(p.links)}" placeholder="Research papers, portfolio, lab page"></div>
+   <div class="field"><label class="lbl" for="freq">How often?</label>${sel('freq',[['2w','1-on-1 every 2 weeks'],['4w','1-on-1 every month']],p.freq)}</div>
+   <div class="field"><label class="lbl" for="calendar">Connect your calendar</label><p class="help">I'll only check when you're free, so I can suggest times that work for you both.</p>${sel('calendar',Object.entries(CALS),p.calendar)}</div>
+   ${first?'':`<div class="field"><div class="opts"><label><input type="checkbox" name="paused" ${S.paused?'checked':''}> Pause matching for now</label></div></div>`}`;
+  openModal({title: first?'Set up MagicMatch':'Your MagicMatch profile', body, submit: first?'Start matching':'Save', onSubmit(fd){
+    const path=fd.get('path'), detail=(fd.get('detail')||'').trim();
+    let bad = err('path', !path); bad = err('detail', !detail) || bad;
+    if(bad) return false;
+    const wasNew = !S.profile;
+    S.profile = {type:fd.get('type'), lab:fd.get('lab'), meet:fd.get('meet'), path, detail, about:(fd.get('about')||'').trim(), links:(fd.get('links')||'').trim(), freq:fd.get('freq'), calendar:fd.get('calendar')};
+    if(!wasNew) S.paused = fd.get('paused')==='on';
+    const firstMsg = S.convs.bot.msgs.find(m=>m.blocks&&m.blocks.some(b=>b.type==='actions'&&b.items.some(i=>i.act==='onboard')));
+    if(firstMsg) closeBlocks(firstMsg.id,'✅ Profile set up');
+    save();
+    if(wasNew){
+      const pr=S.profile;
+      go('bot');
+      say('bot','bot',{text:`You're all set, Masha! ✨\n\n*${pr.type}* · ${pr.lab}\nWants to meet: ${pr.meet==='anyone'?'anyone in the lab':TYPE_SHORT[pr.meet]}\nLooking for: *${PATHS[pr.path]}*\nHow often: ${pr.freq==='2w'?'a new 1-on-1 every 2 weeks':'a new 1-on-1 every month'}\nCalendar: ${CALS[pr.calendar]}\n\nWant your first match now?`,
+        blocks:[{type:'actions',items:[{label:'✨ Find my first match',style:'primary',act:'match'},{label:'I\'ll wait',act:'moveon'}]}]});
+    } else { toast('Profile saved'); render(); }
+  }});
+}
+function openSchedule(pid, msgId){
+  const p=person(pid), cal=S.profile.calendar;
+  const connected = cal && cal!=='none';
+  openModal({title:`Find a time with ${p.short}`, submit:'Send invite', body:`
+    ${connected?`<div class="tip">📅 These are times you and ${p.short} are both free, from your ${CALS[cal]}.</div>`:`<div class="tip">📅 Connect your calendar and I'll only show times you're both free. <button type="button" class="link-btn" data-connectcal="${pid}" data-msg2="${msgId||''}">Connect Google Calendar</button></div>`}
+    <div class="field"><label class="lbl">Pick a time</label><div class="opts">${SLOTS.map((s,i)=>`<label><input type="radio" name="slot" value="${esc(s)}" ${i===0?'checked':''}>${esc(s)}</label>`).join('')}</div></div>
+    <div class="field"><label class="lbl" for="place">Where</label>${sel('place',PLACES.map(x=>[x,x]),PLACES[0])}</div>
+    <div class="field"><div class="opts"><label><input type="checkbox" name="addcal" ${connected?'checked':''}> Add it to my calendar</label></div></div>
+    <div class="field"><label class="lbl" for="note">Add a note <span style="font-weight:400;color:#616061">(optional)</span></label><input type="text" id="note" name="note" placeholder="e.g. I'd love to hear about your research!"></div>`,
+    onSubmit(fd){
+      const slot=fd.get('slot'), place=fd.get('place'), note=(fd.get('note')||'').trim(), add=fd.get('addcal')==='on';
+      if(add && (!S.profile.calendar||S.profile.calendar==='none')) S.profile.calendar='google';
+      if(msgId) closeBlocks(msgId,`📅 You suggested ${slot}`);
+      openIntro(pid, id=>{
+        const inv = post(id,{from:'me',text:note||`Want to meet ${slot.replace(' · ',' at ')}?`,blocks:[{type:'invite',slot,place,status:'pending',added:add}]});
+        const c=S.convs[id]; c.step=Math.max(c.step,1);
+        later(()=>{ inv.blocks[0].status='ok'; save(); render(); }, 2600);
+        say(id,pid,{text:`That works for me! Added it to my calendar ✅`},2600);
+        scheduled(pid, slot, place);
+        if(add) later(()=>toast(`Added to ${CALS[S.profile.calendar]}`),400);
+      });
+    }});
+}
+function openSkip(pid, msgId){
+  const p=person(pid);
+  openModal({title:'Skip this match?', submit:'Skip', body:`
+    <p style="margin:0;font-size:14px;color:#616061">${p.short} won't be told why. This helps me pick better next time.</p>
+    <div class="field"><label class="lbl" for="why">What's off?</label>${sel('why',[['Not a fit for what I\'m looking for','Not a fit for what I\'m looking for'],['I already know them','I already know them'],['Too busy right now','Too busy right now'],['Something else','Something else']],'')}</div>
+    <div class="field"><div class="opts"><label><input type="checkbox" name="pause"> Also pause matching for 2 weeks</label></div></div>`,
+    onSubmit(fd){
+      closeBlocks(msgId,`⏭ Skipped: ${fd.get('why')}`);
+      S.connections = S.connections.filter(c=>c.pid!==pid);
+      if(S.round>0 && !S.connections.some(c=>c.round===S.round)) S.round--;
+      if(fd.get('pause')==='on'){ S.paused=true; save(); say('bot','bot',{text:'No problem! ⏸ Matching is paused for 2 weeks.',blocks:[{type:'actions',items:[{label:'Resume now',act:'resume'}]}]}); }
+      else { save(); say('bot','bot',{text:'No problem, thanks for telling me. Want someone else for this round?',blocks:[{type:'actions',items:[{label:'Find someone else',style:'primary',act:'early'},{label:'Wait for next round',act:'moveon'}]}]}); }
+    }});
+}
+
+/* ---------------- rendering ---------------- */
+function go(id){ S.active=id; S.tab='messages'; delete S.unread[id]; save(); render(); setTimeout(()=>{const t=$('#ta'); if(t) t.focus();},0); }
+
+function renderSide(){
+  const ch = ['general','events','meep','phds'];
+  const item = id => {
+    const c=S.convs[id], on=S.active===id, u=S.unread[id];
+    let icon, label=esc(c.name);
+    if(c.type==='channel') icon = c.private ? `<svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="9" width="12" height="8" rx="1.5"/><path d="M7 9V6a3 3 0 016 0v3"/></svg>` : `<span style="width:16px;text-align:center;font-size:17px">#</span>`;
+    else if(c.type==='app') { icon = `<span class="mini" style="background:none">${MARK('sb'+(markN++))}</span>`; label += ' <span class="app-tag">APP</span>'; }
+    else if(c.type==='group'){ const p=person(c.pid); icon=`<span class="mini" style="background:${p.color}">${esc(p.init)}</span>`; label=esc(p.name)+' <span class="app-tag">✨</span>'; }
+    else { const p=c.person; icon=`<span class="mini" style="background:${p.color}">${p.init}</span>`; }
+    return `<button class="item ${on?'on':''} ${u&&!on?'unread':''}" data-go="${id}">${icon}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${label}</span>${u&&!on&&c.type!=='channel'?`<span class="badge">${u}</span>`:''}</button>`;
+  };
+  $('#side').innerHTML = `
+    <div class="side-head"><h1>Design Lab <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 8l5 5 5-5"/></svg></h1><button class="icon-btn" aria-label="New message"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 16l1-4 8-8 3 3-8 8zM12 5l3 3"/></svg></button></div>
+    <div class="sec"><button class="item" data-act-home="1"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7" cy="11" r="4"/><circle cx="13" cy="11" r="4"/></svg>My matches</button></div>
+    <div class="sec"><div class="sec-title">▾ Channels</div>${ch.map(item).join('')}</div>
+    <div class="sec"><div class="sec-title">▾ Direct messages</div>${S.dmOrder.map(item).join('')}</div>
+    <div class="sec"><div class="sec-title">▾ Apps</div>${item('bot')}</div>`;
+}
+
+function profileCard(p){
+  return `<div class="card">
+    <div class="prof">${avatar(p)}<div><h3>${esc(p.name)}</h3><div class="sub">${esc(p.type)} · <b>${esc(p.lab)}</b></div><div class="bio">🔬 <b>Researches:</b> ${esc(p.research)}</div></div></div>
+    <div class="about"><i>In ${esc(p.short)}'s words</i>${esc(p.about)}</div>
+    ${p.links.length?`<div class="links">${p.links.map(l=>`<button class="linkchip" data-link="${esc(l.t)}">${esc(l.t)}</button>`).join('')}</div>`:''}
+    <div class="why"><b>✨ Why you matched</b><ul>${whyList(p).map(w=>`<li>${md(w)}</li>`).join('')}</ul></div>
+    <div class="prompts"><b style="font-size:14px">💬 Here's what you could talk about</b>${promptsFor(p).map(x=>`<div class="prompt"><div class="k">${esc(x.k)}</div>${esc(x.q)}</div>`).join('')}<button class="link-btn" style="align-self:flex-start" data-newq="${p.id}">🔀 Different prompts</button></div>
+    <div class="tip">💡 <b>Slack or email?</b> Slack is perfect. ${esc(p.short)} signed up to get Slack messages, so just say hi in the chat I open for you two.</div>
+  </div>`;
+}
+function renderBlock(b, m){
+  switch(b.type){
+    case 'ctx': return `<div class="ctx">${md(b.text)}</div>`;
+    case 'done': return `<div class="done">${esc(b.text)}</div>`;
+    case 'actions': return `<div class="actions">${b.items.map((it,i)=>`<button class="btn ${it.style||''}" data-msg="${m.id}" data-i="${i}">${esc(it.label)}</button>`).join('')}</div>`;
+    case 'match': return profileCard(person(b.pid));
+    case 'whybox': { const p=person(b.pid); return `<div class="why"><b>✨ Why I matched you</b><ul>${whyList(p).map(w=>`<li>${md(w)}</li>`).join('')}</ul></div>`; }
+    case 'promptbox': { const p=person(b.pid); return `<div class="prompts"><b style="font-size:14px">💬 What you could talk about</b>${promptsFor(p).map(x=>`<div class="prompt"><div class="k">${esc(x.k)}</div>${esc(x.q)}</div>`).join('')}</div>`; }
+    case 'invite': { const [d,t]=b.slot.split(' · '); const [dow,md2]=d.split(', '); return `<div class="card sched"><div class="cal"><span>${esc(dow.toUpperCase())}</span><span>${esc(md2.split(' ')[1])}</span></div><div style="flex:1"><b>1-on-1</b><div class="ctx">${esc(b.slot)} · ${esc(b.place)}</div>${b.added?`<div class="ctx" style="color:#0b6b4f;font-weight:700">✓ On your ${esc(CALS[S.profile.calendar]||'calendar')}</div>`:`<button class="link-btn" data-addcal="${m.id}">+ Add to my calendar</button>`}</div><span class="status ${b.status}">${b.status==='ok'?'✓ Accepted':'Pending'}</span></div>`; }
+  }
+  return '';
+}
+function renderMsgs(c){
+  let html='<div class="day"><span>Today</span></div>', prev=null;
+  c.msgs.forEach(m=>{
+    const p=sender(m.from);
+    const cont = prev && prev.from===m.from && m.ts-prev.ts<5 && !m.ephemeral && !prev.ephemeral;
+    const reacts = Object.entries(m.reacts||{}).filter(([,v])=>v.n>0);
+    html += `<div class="msg ${cont?'cont':''} ${m.ephemeral?'ephemeral':''}">
+      ${avatar(p)}
+      <div style="min-width:0">
+        ${cont?'':`<div class="meta"><span class="who">${esc(p.name)}</span>${p.bot?'<span class="app-tag" style="background:#eee;color:#616061">APP</span>':''}<span class="time">${fmtTime(m.ts)}</span></div>`}
+        ${m.ephemeral?'<div class="ctx">👁 Only visible to you</div>':''}
+        ${m.text?`<div class="text">${md(m.text)}</div>`:''}
+        ${m.blocks&&m.blocks.length?`<div class="blocks">${m.blocks.map(b=>renderBlock(b,m)).join('')}</div>`:''}
+        ${reacts.length?`<div class="reacts">${reacts.map(([e,v])=>`<button class="react ${v.mine?'mine':''}" data-react="${m.id}" data-e="${e}">${e} <b>${v.n}</b></button>`).join('')}</div>`:''}
+      </div>
+      <div class="hover-bar">${['✅','👍','✨','🙌'].map(e=>`<button data-react="${m.id}" data-e="${e}" title="React ${e}">${e}</button>`).join('')}</div>
+    </div>`;
+    prev=m;
+  });
+  return html;
+}
+function renderHome(){
+  const pr=S.profile;
+  if(!pr) return `<div class="home"><h2>MagicMatch ✨</h2><p class="lead">Meet one new person in the Design Lab every 2 weeks, with a reason to talk.</p><button class="btn primary" data-plain="onboard">Get started</button></div>`;
+  const conns = S.connections.slice().reverse();
+  const nodes = conns.map((c,i)=>{ const p=person(c.pid); return `<div class="edge"><span>${esc(c.date)}</span></div><div class="node">${avatar(p)}<div class="nm">${esc(p.short)}</div><div class="rl">${esc(p.type.replace(' / involved in the lab',''))}</div></div>`; }).join('');
+  return `<div class="home">
+    <h2>Hi Masha ✨</h2><p class="lead">${esc(pr.type)} · ${esc(pr.lab)} · Looking for ${esc(PATHS[pr.path].toLowerCase())}</p>
+    <h4 style="margin-top:0">Your MagicMatch circle</h4>
+    <div class="circle"><div class="node"><div class="av" style="background:${ME.color}">${ME.init}</div><div class="nm">You</div><div class="rl">Masha</div></div>${nodes}<div class="edge"><span>${esc(nextDate())}</span></div><div class="node ghost"><div class="av">?</div><div class="nm">Next match</div><div class="rl">in 2 weeks</div></div></div>
+    <p class="sub" style="color:#616061;font-size:13px;margin:8px 0 18px">A new person every 2 weeks adds up: that's about 10 new people in the lab by the end of the year.</p>
+    <div class="stats">
+      <div class="stat"><div class="l">People met</div><div class="n">${S.connections.length}</div></div>
+      <div class="stat"><div class="l">Labs reached</div><div class="n">${new Set(S.connections.map(c=>person(c.pid).lab)).size}</div></div>
+      <div class="stat"><div class="l">Next match</div><div class="n" style="font-size:18px;padding-top:6px">${S.paused?'Paused':esc(nextDate())}</div></div>
+    </div>
+    <div class="row" style="border:0"><div style="flex:1"><b>Matching is ${S.paused?'paused':'on'}</b><div class="sub">${S.paused?'You won\'t get new intros.':(pr.freq==='2w'?'1-on-1 every 2 weeks':'1-on-1 every month')+' · Calendar: '+esc(CALS[pr.calendar])}</div></div><button class="toggle ${S.paused?'':'on'}" data-toggle="pause" aria-label="Toggle matching"></button></div>
+    <div style="display:flex;gap:8px;margin-top:8px"><button class="btn primary" data-plain="match">Find me a match</button><button class="btn" data-plain="settings">Edit profile</button></div>
+    <h4>People you've met</h4>
+    ${S.connections.length?S.connections.map(c=>{const p=person(c.pid);return `<div class="row">${avatar(p)}<div style="flex:1"><b>${esc(p.name)}</b><div class="sub">${esc(p.type)} · ${esc(p.lab)}${c.slot?' · met '+esc(c.slot.split(' · ')[0]):''}${c.rating?' · '+esc(c.rating):''}${c.followup?' · 🔁 reminder set':''}</div></div><button class="btn" data-go="m_${p.id}">Message</button></div>`}).join(''):'<p class="sub" style="color:#616061">No one yet. Your first match will show up here.</p>'}
+  </div>`;
+}
+function renderTyping(){ const t=$('#typing'); if(!t) return; t.textContent = typingFor && typingFor.conv===S.active ? `${typingFor.from==='bot'?BOT:sender(typingFor.from).name} is typing…` : ''; }
+
+function render(){
+  markN=0;
+  renderSide();
+  const c=S.convs[S.active];
+  if(c.type==='group' && !S.convs[S.active].introduced && !c.msgs.length){}
+  let title, right='', tabs='';
+  if(c.type==='channel'){ title=`${c.private?'🔒':'#'} ${esc(c.name)}`; right=`<span class="members">👥 ${c.members}</span>`; }
+  else if(c.type==='app'){ title=`${botAvatar(26)} MagicMatch`;
+    tabs=`<div class="tabs">${['messages','home','about'].map(t=>`<button class="tab ${S.tab===t?'on':''}" data-tab="${t}">${t[0].toUpperCase()+t.slice(1)}</button>`).join('')}</div>`; }
+  else if(c.type==='group'){ const p=person(c.pid); title=`${esc(p.name)} <span style="font-weight:400;color:#616061;font-size:14px">+ MagicMatch</span>`; }
+  else { title=esc(c.name); }
+  const ph = c.type==='channel' ? `Message #${c.name}` : c.type==='app' ? 'Message MagicMatch, or type / for commands' : `Message ${c.type==='group'?person(c.pid).short:c.person.short}`;
+  let content;
+  if(c.type==='app' && S.tab==='home') content = renderHome();
+  else if(c.type==='app' && S.tab==='about') content = `<div class="home"><h2>About MagicMatch</h2><p class="lead">One new person in the Design Lab every 2 weeks.</p><p>Built by <b>Team MEEP</b> for the Design Lab AIP mini-sprint.</p><p><b>Why:</b> the Design Lab's mission depends on people from different fields working together, but most members stay inside their own labs. People told us it's uncomfortable to reach out to researchers they don't know, first conversations feel awkward, they aren't sure whether Slack or email is appropriate, and they don't know what most people in the lab research.</p><p><b>So every match includes:</b> what the person researches in their own words, why you matched, prompts on mentorship and research, a clear “just use Slack,” and times you're both free on your calendars.</p></div>`;
+  else content = `<div class="feed" id="feed">${renderMsgs(c)}</div><div class="typing" id="typing"></div>
+    <div class="composer"><div class="slash" id="slash"></div>
+      <div class="fmt"><span>B</span><span><i>I</i></span><span><s>S</s></span><span>🔗</span><span>≡</span><span>&lt;/&gt;</span></div>
+      <textarea id="ta" rows="1" placeholder="${esc(ph)}" aria-label="${esc(ph)}"></textarea>
+      <div class="comp-foot"><span style="font-size:18px;padding:0 6px">＋</span><span style="padding:0 4px">Aa</span><span style="padding:0 4px">☺</span><span style="padding:0 4px">@</span><button class="send" id="send" aria-label="Send"><svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="M2 17l16-7L2 3v5l11 2-11 2z"/></svg></button></div>
+    </div><div class="hint" id="hint"></div>`;
+  const keep = $('#ta') ? $('#ta').value : '';
+  const keepConv = render._conv;
+  $('#main').innerHTML = `<div class="hdr"><div class="hdr-row"><div class="hdr-title">${title}</div><div class="hdr-right">${right}</div></div>${tabs}</div>${content}`;
+  render._conv = S.active+S.tab;
+  const ta=$('#ta');
+  if(ta){ if(keepConv===render._conv && keep){ ta.value=keep; } bindComposer(ta); }
+  const feed=$('#feed'); if(feed) feed.scrollTop=feed.scrollHeight;
+  renderTyping();
+}
+
+/* ---------------- composer ---------------- */
+let slashSel=0;
+function updSend(){ const ta=$('#ta'), b=$('#send'); if(ta&&b) b.classList.toggle('ready', !!ta.value.trim()); }
+function showSlash(){
+  const ta=$('#ta'), box=$('#slash'); if(!ta||!box) return;
+  const v=ta.value.trim();
+  const list = ta.value.startsWith('/') && !ta.value.includes('\n') ? CMDS.filter(c=>c.c.startsWith(v) || (v.length<11 && c.c.startsWith(v))) : [];
+  if(!list.length){ box.classList.remove('show'); return; }
+  slashSel = Math.min(slashSel, list.length-1);
+  box.innerHTML = `<div class="s-head">MagicMatch commands</div>`+list.map((c,i)=>`<div class="opt ${i===slashSel?'on':''}" data-cmd="${c.c}"><span class="c">${c.c}</span><span class="d">${c.d}</span></div>`).join('');
+  box.classList.add('show'); box._list=list;
+}
+function bindComposer(ta){
+  const auto=()=>{ ta.style.height='auto'; ta.style.height=Math.min(ta.scrollHeight,180)+'px'; };
+  ta.addEventListener('input',()=>{ auto(); updSend(); slashSel=0; showSlash(); $('#hint').textContent = ta.value ? 'Enter to send · Shift + Enter for a new line' : ''; });
+  ta.addEventListener('keydown',e=>{
+    const box=$('#slash');
+    if(box.classList.contains('show')){
+      if(e.key==='ArrowDown'){ e.preventDefault(); slashSel=(slashSel+1)%box._list.length; showSlash(); return; }
+      if(e.key==='ArrowUp'){ e.preventDefault(); slashSel=(slashSel-1+box._list.length)%box._list.length; showSlash(); return; }
+      if(e.key==='Tab'){ e.preventDefault(); ta.value=box._list[slashSel].c; showSlash(); updSend(); return; }
+      if(e.key==='Enter' && !e.shiftKey && ta.value.trim()!==box._list[slashSel].c){ e.preventDefault(); ta.value=box._list[slashSel].c; box.classList.remove('show'); send(); return; }
+      if(e.key==='Escape'){ box.classList.remove('show'); return; }
+    }
+    if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); send(); }
+  });
+  $('#send').onclick=send;
+  auto(); updSend();
+}
+function send(){
+  const ta=$('#ta'); const v=ta.value.trim(); if(!v) return;
+  ta.value=''; $('#slash').classList.remove('show'); $('#hint').textContent='';
+  const conv=S.active;
+  if(/^\/magicmatch\b/.test(v)) { runSlash(v, conv); render(); return; }
+  if(v.startsWith('/')) { post(conv,{from:'bot',ephemeral:true,text:`\`${v.split(' ')[0]}\` isn't a command here. Try \`/magicmatch help\`.`}); return; }
+  post(conv,{from:'me',text:v});
+  const c=S.convs[conv];
+  if(conv==='bot') later(()=>botReply(v),300);
+  else if(c.type==='group') simReply(conv);
+  else if(conv==='evan') { if(!c.r){c.r=1; say('evan','evan',{text:'lol nice. who did it match you with?'},1800);} }
+  else if(conv==='phoebe') { if(!c.r){c.r=1; say('phoebe','phoebe',{text:'tysm!! 🙏'},1500);} }
+}
+
+/* ---------------- events ---------------- */
+document.addEventListener('click',e=>{
+  const t=e.target.closest('button,[data-cmd],[data-close]'); if(!t) return;
+  if(t.dataset.close!==undefined){ closeModal(); return; }
+  if(t.dataset.go){ go(t.dataset.go); return; }
+  if(t.dataset.actHome){ S.active='bot'; S.tab='home'; delete S.unread.bot; save(); render(); return; }
+  if(t.dataset.tab){ S.tab=t.dataset.tab; if(S.tab==='messages') delete S.unread.bot; save(); render(); return; }
+  if(t.dataset.cmd){ const ta=$('#ta'); ta.value=t.dataset.cmd; $('#slash').classList.remove('show'); send(); return; }
+  if(t.dataset.newq){ S.promptIdx[t.dataset.newq]=(S.promptIdx[t.dataset.newq]||0)+1; save(); render(); return; }
+  if(t.dataset.link){ toast(`Opens ${t.dataset.link.replace(/^\S+\s/,'')} (prototype)`); return; }
+  if(t.dataset.addcal){ ACT.addcal(null,{msg:t.dataset.addcal}); return; }
+  if(t.dataset.connectcal){ S.profile.calendar='google'; save(); const pid=t.dataset.connectcal, mid=t.dataset.msg2; closeModal(); toast('Google Calendar connected'); openSchedule(pid, mid?+mid:null); return; }
+  if(t.dataset.plain){ ACT[t.dataset.plain](null,{}); return; }
+  if(t.dataset.toggle){ S.paused=!S.paused; save(); render(); toast(S.paused?'Matching paused':'Matching resumed'); return; }
+  if(t.dataset.react){
+    const [,m]=findMsg(t.dataset.react); const r=m.reacts[t.dataset.e]||(m.reacts[t.dataset.e]={n:0});
+    r.mine=!r.mine; r.n+= r.mine?1:-1; save(); render(); return;
+  }
+  if(t.dataset.msg){
+    const [,m]=findMsg(t.dataset.msg); const block=m.blocks.find(b=>b.type==='actions');
+    const a=block && block.items[+t.dataset.i]; if(!a) return;
+    if(ACT[a.act]) ACT[a.act](m,a);
+    return;
+  }
+  if(t.dataset.demo){
+    const d=t.dataset.demo;
+    if(d==='reset'){ timers.forEach(clearTimeout); timers=[]; typingFor=null; S=fresh(); seed(); go('bot'); toast('Prototype reset'); }
+    if(d==='checkin'){ tick(60*26); checkIn(); toast('Jumped ahead: the check-in arrived'); }
+    if(d==='next'){ if(!S.profile){ toast('Finish setup first'); } else { tick(60*24); say('bot','bot',{text:`Good morning! ☀️ It's *${nextDate()}*: time for your next match.`},300); later(()=>sendMatch(true),700); } }
+    $('#demo').classList.remove('show');
+    return;
+  }
+});
+document.addEventListener('submit',e=>{
+  if(e.target.id!=='mform') return; e.preventDefault();
+  const fd=new FormData(e.target);
+  const r = modalSubmit && modalSubmit(fd);
+  if(r!==false) closeModal();
+});
+$('#scrim').addEventListener('mousedown',e=>{ if(e.target.id==='scrim') closeModal(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape' && $('#scrim').classList.contains('show')) closeModal(); });
+document.addEventListener('input',e=>{ const n=e.target.name; if(n==='path'||n==='detail') err(n,false); });
+document.addEventListener('change',e=>{ const n=e.target.name; if(n==='path') err(n,false); });
+$('#demoBtn').onclick=()=>$('#demo').classList.toggle('show');
+$('#search').addEventListener('keydown',e=>{
+  if(e.key!=='Enter') return;
+  const q=e.target.value.toLowerCase().replace('#','').trim(); if(!q) return;
+  const id=Object.keys(S.convs).find(k=>S.convs[k].name.toLowerCase().includes(q));
+  if(id){ go(id); e.target.value=''; e.target.blur(); } else toast('No conversation matches "'+q+'"');
+});
+
+/* ---------------- boot ---------------- */
+S = load();
+if(!S){ S=fresh(); seed(); }
+typingFor=null;
+render();
+
+</script>
+</body>
+</html>
